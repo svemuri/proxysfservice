@@ -52,7 +52,7 @@ public class CatalogResult {
 				JsonNode e = it.next();
 				if (e!= null && e.get("name") != null)
 					result.add(new TableColumnDescriptor(e.get("name").asText(),
-							"string", false));
+							"String", false));
 			}
 		} catch (JsonParseException e) {
 			// TODO Auto-generated catch block
