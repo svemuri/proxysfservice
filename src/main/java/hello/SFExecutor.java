@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import javax.ws.rs.core.MultivaluedMap;
 
@@ -14,6 +15,7 @@ import org.codehaus.jackson.JsonNode;
 import org.codehaus.jackson.JsonParseException;
 import org.codehaus.jackson.map.JsonMappingException;
 import org.codehaus.jackson.map.ObjectMapper;
+import org.springframework.util.MultiValueMap;
 
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
@@ -23,13 +25,8 @@ import com.sun.jersey.core.util.MultivaluedMapImpl;
 
 
 public class SFExecutor {
-	private static final String clientID = "3MVG9uudbyLbNPZMWV.9GGxt7J0qqHKdlv86z1MMhlxeVddicL.ry8Ac8zdFZM61KkBB6YwMTaMr53lGqzOPS";
-
-	private static final String userName = "william.tell345@gmail.com";
-	private static final String password_real = "salesforce13";
-	private static final String security_token = "e8fP6KaM24lHO1lL6Tkm7wJx";
-	private static final String password = password_real + security_token;
-	private static final String clientSecret = "5048617640078529378";
+	private static Map<String,String> credentialsMap = new HashMap<String,String>();
+	
 	
 
 	private String authToken="NULL";
@@ -40,16 +37,60 @@ public class SFExecutor {
 	private String catalogURL = baseURL+"/sobjects";
 
 	private QueryResult queryResult = null;
+	
+	private void printHttpHeaders(MultiValueMap<String, String> headers) {
+		// TODO Auto-generated method stub
+		for (Entry<String, List<String>> entry : headers.entrySet()) {
+			  System.out.println("http header key = " + entry.getKey());
+			  System.out.print(" value = " );
+			  for (String v: entry.getValue())
+				  System.out.print(" " + v);
+			  System.out.println("");
+		}
+	}
 
-	public SFExecutor() {
+	public SFExecutor(MultiValueMap<String, String> headers) {
+		printHttpHeaders(headers);
 
-
+		setCredentials(headers);
 		System.setProperty("https.proxyHost", "www-proxy.us.oracle.com");
 		System.setProperty("https.proxyPort", "80");
 		System.setProperty("http.proxyHost", "www-proxy.us.oracle.com");
 		System.setProperty("http.proxyPort", "80");
 		refreshAuthToken();
 
+	}
+
+	private void setDefaultCredentials(){
+		
+		System.out.println("WARNING: using default credentials");
+		 credentialsMap.put("client_id","3MVG9uudbyLbNPZMWV.9GGxt7J0qqHKdlv86z1MMhlxeVddicL.ry8Ac8zdFZM61KkBB6YwMTaMr53lGqzOPS");
+
+		 credentialsMap.put("username",  "william.tell345@gmail.com");
+		 credentialsMap.put("password", "salesforce13" + "e8fP6KaM24lHO1lL6Tkm7wJx");
+		
+		
+		 credentialsMap.put("client_secret","5048617640078529378");
+	}
+	
+	private void setCredentials(MultiValueMap<String, String> headers) {
+		// TODO Auto-generated method stub
+		if (headers == null || !headers.containsKey("extracredentials")){
+			setDefaultCredentials();
+			return;
+		}
+		
+		String credentialsString = headers.getFirst("extracredentials");
+		String[] keyValues = credentialsString.split(",");
+		for (String kv: keyValues){
+			String[] s = kv.split(":");
+			credentialsMap.put(s[0].trim(), s[1].trim());
+		}
+		
+		// update password
+		credentialsMap.put("password", credentialsMap.get("password")+credentialsMap.get("secret_token"));
+		
+		
 	}
 
 	public QueryResult executeQuery(String query) {
@@ -93,10 +134,7 @@ public class SFExecutor {
 		MultivaluedMap<String, String> params = new MultivaluedMapImpl();
 
 		params.add("grant_type", "password");
-		params.add("client_id", clientID);
-		params.add("client_secret", clientSecret);
-		params.add("username", userName);
-		params.add("password", password);
+		addCredentialParameters(params);
 
 		WebResource webResource = client.resource(authURL);
 
@@ -128,6 +166,12 @@ public class SFExecutor {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}	
+	}
+
+	private void addCredentialParameters(MultivaluedMap<String, String> params) {
+		for (String k: credentialsMap.keySet())
+			params.add(k,  credentialsMap.get(k));
+		
 	}
 
 	public QueryResult getQueryResult() {
