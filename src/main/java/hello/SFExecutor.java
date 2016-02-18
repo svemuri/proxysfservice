@@ -64,13 +64,15 @@ public class SFExecutor {
 	private void setDefaultCredentials(){
 		
 		System.out.println("WARNING: using default credentials");
-		 credentialsMap.put("client_id","3MVG9uudbyLbNPZMWV.9GGxt7J0qqHKdlv86z1MMhlxeVddicL.ry8Ac8zdFZM61KkBB6YwMTaMr53lGqzOPS");
+		 credentialsMap.put("client_id",
+				 "3MVG9uudbyLbNPZPTrX4Cbffr288nJLNAZGWHfvjJ1KQ8IdOsKVfpYWDu47WNYuGBp7ESCoXfkNIgkMeHH3Xo");
 
-		 credentialsMap.put("username",  "william.tell345@gmail.com");
-		 credentialsMap.put("password", "salesforce13" + "e8fP6KaM24lHO1lL6Tkm7wJx");
+		 credentialsMap.put("username",  "peter.rubin345@gmail.com");
+		 credentialsMap.put("password", "salesforce13" + "rQznMJJk9s9scgJqJK4JeGHy"
+				 );
 		
 		
-		 credentialsMap.put("client_secret","5048617640078529378");
+		 credentialsMap.put("client_secret","7913733069401068210");
 	}
 	
 	private void setCredentials(MultiValueMap<String, String> headers) {
