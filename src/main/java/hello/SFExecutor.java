@@ -65,14 +65,13 @@ public class SFExecutor {
 		
 		System.out.println("WARNING: using default credentials");
 		 credentialsMap.put("client_id",
-				 "3MVG9uudbyLbNPZPTrX4Cbffr288nJLNAZGWHfvjJ1KQ8IdOsKVfpYWDu47WNYuGBp7ESCoXfkNIgkMeHH3Xo");
-
-		 credentialsMap.put("username",  "peter.rubin345@gmail.com");
-		 credentialsMap.put("password", "salesforce13" + "rQznMJJk9s9scgJqJK4JeGHy"
-				 );
+				 "3MVG9uudbyLbNPZMW7oSwnN.yHZHV3UUL2zKsAMRvocGN4GGNpT7lpht4qiU3E531bQZXJQ_ba5_eAasLXFA3");
+		 credentialsMap.put("username",  "johny.cash3456@gmail.com");
+		 credentialsMap.put("password", "salesforce14" + "5zSSQFPdvBmUHaZhspXEUoNCL");
+				
 		
 		
-		 credentialsMap.put("client_secret","7913733069401068210");
+		 credentialsMap.put("client_secret","5939251840186055793");
 	}
 	
 	private void setCredentials(MultiValueMap<String, String> headers) {
@@ -121,7 +120,9 @@ public class SFExecutor {
 				.header("Authorization", "OAuth "+authToken)
 				.get(ClientResponse.class);
 
+		
 		if (response.getStatus() != 200) {
+			System.out.println("error response = " + response.getEntity(String.class));
 			throw new RuntimeException("Failed trying to execute query: HTTP error code : "
 					+ response.getStatus());
 		}
