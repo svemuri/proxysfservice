@@ -1,4 +1,4 @@
-package hello;
+package proxysf;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -25,7 +25,7 @@ public class CatalogResult {
 			for (Iterator<JsonNode> it = anode.getElements(); it.hasNext();){
 				JsonNode e = it.next();
 				if (e!= null && e.get("name") != null)
-					result.add(new TableDescriptor(e.get("name").asText(), null));
+					result.add(new TableDescriptor(e.get("name").asText(), new ArrayList<TableColumnDescriptor>()));
 			}
 			return result;
 					
@@ -82,7 +82,7 @@ public class CatalogResult {
 			this.columns = columns;
 		}
 		public String tableName;
-		public List<TableColumnDescriptor> columns;
+		public List<TableColumnDescriptor> columns = new ArrayList<TableColumnDescriptor>();
 		public TableDescriptor(String tableName,
 				List<TableColumnDescriptor> columns) {
 			super();

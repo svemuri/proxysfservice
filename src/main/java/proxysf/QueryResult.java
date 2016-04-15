@@ -1,4 +1,4 @@
-package hello;
+package proxysf;
 
 import org.codehaus.jackson.map.JsonMappingException;
 import org.codehaus.jackson.map.ObjectMapper;
@@ -107,7 +107,7 @@ public class QueryResult{
 			String en = it.next();
 			JsonNode n = node.get(en);
 			if (n.isValueNode() || n.isMissingNode()) {
-				recordValues.add(n.toString());
+				recordValues.add(n.asText());
 				first = false;
 			}
 			else if (n.isObject())

@@ -1,7 +1,4 @@
-package hello;
-
-import hello.CatalogResult.TableColumnDescriptor;
-import hello.CatalogResult.TableDescriptor;
+package proxysf;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -17,6 +14,9 @@ import org.codehaus.jackson.map.JsonMappingException;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.springframework.util.MultiValueMap;
 
+import proxysf.CatalogResult.TableColumnDescriptor;
+import proxysf.CatalogResult.TableDescriptor;
+
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
@@ -25,10 +25,9 @@ import com.sun.jersey.core.util.MultivaluedMapImpl;
 
 
 public class SFExecutor {
-	private static Map<String,String> credentialsMap = new HashMap<String,String>();
+	private  Map<String,String> credentialsMap = new HashMap<String,String>();
 	
 	
-
 	private String authToken="NULL";
 	private String authURL = 
 			"https://login.salesforce.com/services/oauth2/token";
@@ -57,7 +56,7 @@ public class SFExecutor {
 		System.setProperty("https.proxyPort", "80");
 		System.setProperty("http.proxyHost", "www-proxy.us.oracle.com");
 		System.setProperty("http.proxyPort", "80");
-		refreshAuthToken();
+		
 
 	}
 
@@ -75,12 +74,30 @@ public class SFExecutor {
 	}
 	
 	private void setCredentials(MultiValueMap<String, String> headers) {
-		// TODO Auto-generated method stub
-		if (headers == null || !headers.containsKey("extracredentials")){
-			setDefaultCredentials();
+		
+		
+		if (headers.containsKey("extracredentials")){
+			setExtraCredentials(headers);
 			return;
 		}
 		
+		if (headers.containsKey("connection_xml_present")){
+			setConnectionXmlParams(headers);
+			return;
+		}
+		
+		setDefaultCredentials();
+		
+		
+	}
+
+	private void setConnectionXmlParams(MultiValueMap<String, String> headers) {
+		String connection_xml = headers.getFirst("connection_xml");
+		ConnectionParamsParser.parse(connection_xml, credentialsMap);
+		credentialsMap.put("password", credentialsMap.get("password")+credentialsMap.get("secret_token"));
+	}
+
+	private void setExtraCredentials(MultiValueMap<String, String> headers) {
 		String credentialsString = headers.getFirst("extracredentials");
 		String[] keyValues = credentialsString.split(",");
 		for (String kv: keyValues){
@@ -90,12 +107,11 @@ public class SFExecutor {
 		
 		// update password
 		credentialsMap.put("password", credentialsMap.get("password")+credentialsMap.get("secret_token"));
-		
-		
 	}
 
 	public QueryResult executeQuery(String query) {
 		// TODO Auto-generated method stub
+		refreshAuthToken();
 		MultivaluedMap<String, String> params = new MultivaluedMapImpl();
 
 		params.add("q", query);
@@ -108,6 +124,8 @@ public class SFExecutor {
 	}
 
 	private String restCall(String endPoint, MultivaluedMap<String, String> params) {
+		
+		
 		Client client = Client.create();
 
 
@@ -184,6 +202,7 @@ public class SFExecutor {
 
 	public List<TableDescriptor> getTables(String schema) {
 		// TODO Auto-generated method stub
+		refreshAuthToken();
 		String sobjectsJson = restCall(catalogURL, null);
 		List<TableDescriptor> result = CatalogResult.getTables(sobjectsJson);
 		return result;
@@ -191,8 +210,42 @@ public class SFExecutor {
 	}
 
 	public List<TableColumnDescriptor> getTableColumns(String tableName) {
+		refreshAuthToken();
 		String descJson = restCall(catalogURL+"/"+tableName+"/describe", null);
 		return CatalogResult.getTableColumns(descJson);
+	}
+
+	public static final String DESCRIPTION = 
+			  "{\"apiVersion\": \"1.0\","
+			  + "\"instances\": ["
+			  + "{\"name\" : \"Salesforce\","
+			  + "\"properties\": {\"hasSchema\" : \"false\", \"async\" : \"false\"},"
+			  + " \"instanceParams\": [\"client_secret\", \"client_id\"],"
+			  + " \"connectionParams\" : [\"username\", \"password\",\"secret_token\"]"
+			  		+ "}]}";
+	
+	public String describe() {
+		// TODO Auto-generated method stub
+		try {
+			JsonNode n = new ObjectMapper().readValue(DESCRIPTION, JsonNode.class);
+			 return n.toString();
+		} catch (JsonParseException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (JsonMappingException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return null;
+	}
+
+	public String validateCredentials() {
+		// TODO Auto-generated method stub
+		refreshAuthToken();
+		return "{\"status\" : \"OK\"}";
 	}
 
 
@@ -200,7 +253,7 @@ public class SFExecutor {
 public static void main(String[] args){
 	String q = "select name from ACCOUNT";
 	QueryResult r = new SFExecutor(q).getQueryResult();
-}
+}foo
 	 */
 
 }
