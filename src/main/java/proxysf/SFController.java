@@ -1,8 +1,5 @@
-package hello;
+package proxysf;
 
-
-import hello.CatalogResult.TableColumnDescriptor;
-import hello.CatalogResult.TableDescriptor;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -18,6 +15,9 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+
+import proxysf.CatalogResult.TableColumnDescriptor;
+import proxysf.CatalogResult.TableDescriptor;
 
 @RestController
 public class SFController {

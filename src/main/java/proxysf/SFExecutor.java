@@ -1,7 +1,4 @@
-package hello;
-
-import hello.CatalogResult.TableColumnDescriptor;
-import hello.CatalogResult.TableDescriptor;
+package proxysf;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -16,6 +13,9 @@ import org.codehaus.jackson.JsonParseException;
 import org.codehaus.jackson.map.JsonMappingException;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.springframework.util.MultiValueMap;
+
+import proxysf.CatalogResult.TableColumnDescriptor;
+import proxysf.CatalogResult.TableDescriptor;
 
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
