@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 
 import org.codehaus.jackson.JsonNode;
 import org.codehaus.jackson.JsonParseException;
@@ -19,6 +20,7 @@ public class QueryResult{
 	
 	private List<String> fieldNames = new ArrayList<String>();
 	private List<String> recordValues = new ArrayList<String>();
+	private Map<String, String> m_outputSchema;
 	
 	public List<String> getColumnNames(){
 		return fieldNames;
@@ -56,12 +58,19 @@ public class QueryResult{
 	private String getFullFieldName(String prefix, String fieldName){
 		return (prefix.equals("")? fieldName : prefix+"."+fieldName);
 	}
+	
 	private void getFieldNamesFromObjectNode(JsonNode node, String pathName) {
 		for (Iterator<String> it = node.getFieldNames(); it.hasNext();){
 			String en = it.next();
 			JsonNode n = node.get(en);
-			if (n.isValueNode() || n.isMissingNode())
-				fieldNames.add("String "+ getFullFieldName(pathName, en));
+			if (n.isValueNode() || n.isMissingNode()) {
+				String typeName = "String";
+				String fieldName = getFullFieldName(pathName, en);
+				if (m_outputSchema != null && !m_outputSchema.isEmpty() &&
+						m_outputSchema.containsKey(fieldName))
+					typeName = m_outputSchema.get(fieldName);
+				fieldNames.add(typeName + " "+ fieldName);
+			}
 			else if (n.isObject())
 				getFieldNamesFromObjectNode(n, getFullFieldName(pathName,en));
 		}
@@ -72,8 +81,9 @@ public class QueryResult{
 
 	
 
-	public QueryResult(String resultStr) {
+	public QueryResult(String resultStr, Map<String, String> outputSchema) {
 		ObjectMapper mapper = new ObjectMapper();
+		m_outputSchema = outputSchema;
 		try {
 			JsonNode node = (JsonNode) mapper.readValue(resultStr, JsonNode.class);
 			getFieldNames(node.get("records"), "");
@@ -107,7 +117,7 @@ public class QueryResult{
 			String en = it.next();
 			JsonNode n = node.get(en);
 			if (n.isValueNode() || n.isMissingNode()) {
-				recordValues.add(n.toString());
+				recordValues.add((n.isNull() ? null : n.asText()));
 				first = false;
 			}
 			else if (n.isObject())

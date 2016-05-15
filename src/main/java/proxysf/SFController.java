@@ -10,6 +10,7 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MultivaluedMap;
 
+import org.codehaus.jackson.JsonNode;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -27,9 +28,24 @@ public class SFController {
 
     @RequestMapping("/Query")
     public QueryResult getQueryResult(@RequestHeader MultiValueMap<String,String> headers, 
-    		@RequestParam(value="q", defaultValue="World") String query) {
+    		@RequestParam(value="q", defaultValue="World") String query,
+    		@RequestParam(value="reqTypes", defaultValue="false") String reqTypes) {
     	
-        return new SFExecutor(headers).executeQuery(query);
+        return new SFExecutor(headers).executeQuery(query, reqTypes);
+    }
+    
+    @RequestMapping("/Describe")
+    public String getDescription(@RequestHeader MultiValueMap<String,String> headers) { 
+    		
+    	
+        return  new SFExecutor(headers).describe();
+    }
+    
+    @RequestMapping("/Validate")
+    public String validateCredentials(@RequestHeader MultiValueMap<String,String> headers) { 
+    		
+    	
+        return  new SFExecutor(headers).validateCredentials();
     }
     
     

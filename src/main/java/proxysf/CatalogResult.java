@@ -2,8 +2,10 @@ package proxysf;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 
 import org.codehaus.jackson.map.JsonMappingException;
 import org.codehaus.jackson.map.ObjectMapper;
@@ -14,7 +16,22 @@ import org.codehaus.jackson.JsonParseException;
 
 
 public class CatalogResult {
-
+	private static Map<String, String> typeMap = new HashMap<String,String>();
+	
+	static {
+		typeMap.put("double", "Float64");
+		typeMap.put("string", "String");
+		typeMap.put("id", "String");
+		typeMap.put("boolean", "Bool");
+		typeMap.put("date", "Date");
+		typeMap.put("datetime", "Timestamp");
+		typeMap.put("int", "Int64");
+		typeMap.put("time", "Time");
+		typeMap.put("base64", "Binary");
+		typeMap.put("byte", "Byte");
+		typeMap.put("anytype", "Binary");
+		
+	}
 	
 	public static List<TableDescriptor> getTables(String sobjectsJson) {
 		ObjectMapper objMapper = new ObjectMapper();
@@ -25,7 +42,7 @@ public class CatalogResult {
 			for (Iterator<JsonNode> it = anode.getElements(); it.hasNext();){
 				JsonNode e = it.next();
 				if (e!= null && e.get("name") != null)
-					result.add(new TableDescriptor(e.get("name").asText(), null));
+					result.add(new TableDescriptor(e.get("name").asText(), new ArrayList<TableColumnDescriptor>()));
 			}
 			return result;
 					
@@ -50,9 +67,16 @@ public class CatalogResult {
 				return result;
 			for (Iterator<JsonNode> it = anode.getElements(); it.hasNext();){
 				JsonNode e = it.next();
-				if (e!= null && e.get("name") != null)
-					result.add(new TableColumnDescriptor(e.get("name").asText(),
-							"String", false));
+				String xsdType = e.get("soapType").asText();
+				xsdType = xsdType.split(":")[1].toLowerCase();
+				String colType = convertType(xsdType);
+				if (e!= null && e.get("name") != null){
+					TableColumnDescriptor td = 
+							 (new TableColumnDescriptor(e.get("name").asText(),
+							colType, false));
+					System.out.println("table column desc = " + td.columnName + " " + td.columnType);
+					result.add(td);
+				}
 			}
 		} catch (JsonParseException e) {
 			// TODO Auto-generated catch block
@@ -68,6 +92,10 @@ public class CatalogResult {
 		return result;
 	}
 	
+	private static String convertType(String xsdType) {
+		return typeMap.get(xsdType);
+	}
+
 	public static class TableDescriptor {
 		public String getTableName() {
 			return tableName;
@@ -82,7 +110,7 @@ public class CatalogResult {
 			this.columns = columns;
 		}
 		public String tableName;
-		public List<TableColumnDescriptor> columns;
+		public List<TableColumnDescriptor> columns = new ArrayList<TableColumnDescriptor>();
 		public TableDescriptor(String tableName,
 				List<TableColumnDescriptor> columns) {
 			super();
