@@ -18,7 +18,7 @@ apply plugin: 'spring-boot'
 war {
     baseName = 'proxysfservice'
     version = '0.1.0'
-    // webXml = file('src/web.xml')
+    webXml = file('src/web.xml')
 }
 
 jar {

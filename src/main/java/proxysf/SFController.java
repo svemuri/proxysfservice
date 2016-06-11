@@ -1,21 +1,30 @@
 package proxysf;
 
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.concurrent.atomic.AtomicLong;
 
+import javax.servlet.ServletContext;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MultivaluedMap;
 
 import org.codehaus.jackson.JsonNode;
+import org.codehaus.jackson.map.JsonMappingException;
+import org.codehaus.jackson.map.ObjectMapper;
+import org.codehaus.jackson.node.ArrayNode;
+import org.codehaus.jackson.node.ObjectNode;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+
+import com.fasterxml.jackson.core.JsonParseException;
 
 import proxysf.CatalogResult.TableColumnDescriptor;
 import proxysf.CatalogResult.TableDescriptor;
@@ -23,9 +32,73 @@ import proxysf.CatalogResult.TableDescriptor;
 @RestController
 public class SFController {
 
+	@Autowired 
+	ServletContext scontext;
     private static final String template = "Hello, %s!";
     private final AtomicLong counter = new AtomicLong();
-
+    protected static final String DESCRIPTION = 
+			  "{\"apiVersion\": \"1.0\","
+			  + "\"instances\": ["
+			  + "{\"name\" : \"Salesforce\","
+			  + "\"properties\": {\"hasSchema\" : \"false\", \"async\" : \"false\", "
+			  +                   "\"hasQuerySchema\":\"true\", "
+			  +                   "\"dateFormat\":\"yyyy-MM-dd\","
+			  +                   " \"dateTimeFormat\":\"yyyy-MM-dd'T'HH:mm:ss.SSS\"},"
+			  + " \"instanceParams\": [\"client_secret\", \"client_id\"],"
+			  + " \"connectionParams\" : [\"username\", \"password\",\"secret_token\"]},"
+			  + "{\"name\" : \"Salesforcent\","
+			  + "\"properties\": {\"hasSchema\" : \"false\", \"async\" : \"false\", "
+			  +                   "\"hasQuerySchema\":\"false\", "
+			  +                   "\"dateFormat\":\"yyyy-MM-dd\","
+			  +                   " \"dateTimeFormat\":\"yyyy-MM-dd'T'HH:mm:ss.SSS\"},"
+			  + " \"instanceParams\": [\"client_secret\", \"client_id\"],"
+			  + " \"connectionParams\" : [\"username\", \"password\",\"secret_token\"]},"
+			  + "{\"name\" : \"Salesforcessl\","
+			  + "\"properties\": {\"hasSchema\" : \"false\", \"async\" : \"false\", "
+			  +                   "\"hasQuerySchema\":\"true\", \"isSSLEnabled\":\"true\", "
+			  +                   "\"dateFormat\":\"yyyy-MM-dd\","
+			  +                   " \"dateTimeFormat\":\"yyyy-MM-dd'T'HH:mm:ss.SSS\"},"
+			  + " \"instanceParams\": [\"client_secret\", \"client_id\"],"
+			  + " \"connectionParams\" : [\"username\", \"password\",\"secret_token\"]}"
+			  + "]}";
+	
+	public String describe() {
+		// TODO Auto-generated method stub
+		String secureEndpoint = scontext.getInitParameter("SECURE_ENDPOINT");
+		System.out.println("secure end point = " + secureEndpoint);
+		try {
+		    ObjectNode n = (ObjectNode) new ObjectMapper().readValue(DESCRIPTION, JsonNode.class);
+			ObjectNode sslNode = (ObjectNode) ((ArrayNode) n.get("instances")).get(2);
+			((ObjectNode) sslNode.get("properties")).put("secureURL", secureEndpoint);
+			
+			 return n.toString();
+		} catch (JsonParseException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (JsonMappingException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IOException e) {
+			// TODO Auto-geneprated catch block
+			e.printStackTrace();
+		}
+		return null;
+	}
+	
+    private SFExecutor createExecutor(MultiValueMap<String, String> headers){
+    	String iname = headers.getFirst("instanceName");
+    	if (iname == null || iname.trim().equalsIgnoreCase("salesforce"))
+    		return new SFExecutor(headers);
+    	else if (iname.trim().equalsIgnoreCase("salesforceuntyped") ||
+    			iname.trim().equalsIgnoreCase("salesforcent"))
+    		return new SFNTExecutor(headers);
+    	else if (iname.trim().equalsIgnoreCase("salesforcessl"))
+    		return new SFExecutor(headers);
+    		
+    	throw new RuntimeException("unknown instance name = " + iname);
+    }
+    
+    
     @RequestMapping("/Query")
     public QueryResult getQueryResult(@RequestHeader MultiValueMap<String,String> headers, 
     		@RequestParam(value="q", defaultValue="World") String query,
@@ -38,7 +111,7 @@ public class SFController {
     public String getDescription(@RequestHeader MultiValueMap<String,String> headers) { 
     		
     	
-        return  new SFExecutor(headers).describe();
+        return  describe();
     }
     
     @RequestMapping("/Validate")

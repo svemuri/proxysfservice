@@ -35,7 +35,7 @@ public class SFExecutor {
 	private String authURL = 
 			"https://login.salesforce.com/services/oauth2/token";
 	private String baseURL = "https://na22.salesforce.com/services/data/v20.0";
-	private String queryURL = baseURL+"/query";
+	protected String queryURL = baseURL+"/query";
 	private String catalogURL = baseURL+"/sobjects";
 
 	private QueryResult queryResult = null;
@@ -79,13 +79,9 @@ public class SFExecutor {
 	private void setCredentials(MultiValueMap<String, String> headers) {
 		
 		
-		if (headers.containsKey("extracredentials")){
-			setExtraCredentials(headers);
-			return;
-		}
 		
-		if (headers.containsKey("connection_xml_present")){
-			setConnectionXmlParams(headers);
+		if (headers.containsKey("connection_json")){
+			setConnectionJsonParams(headers);
 			return;
 		}
 		
@@ -94,25 +90,15 @@ public class SFExecutor {
 		
 	}
 
-	private void setConnectionXmlParams(MultiValueMap<String, String> headers) {
-		String connection_xml_param = headers.getFirst("connection_xml");
+	private void setConnectionJsonParams(MultiValueMap<String, String> headers) {
+		String connection_json_param = headers.getFirst("connection_json");
 		
-		String connection_xml = new String(DatatypeConverter.parseBase64Binary(connection_xml_param));
-		ConnectionParamsParser.parse(connection_xml, credentialsMap);
+		String connection_json = new String(DatatypeConverter.parseBase64Binary(connection_json_param));
+		ConnectionJsonParser.parse(connection_json, credentialsMap);
 		credentialsMap.put("password", credentialsMap.get("password")+credentialsMap.get("secret_token"));
 	}
 
-	private void setExtraCredentials(MultiValueMap<String, String> headers) {
-		String credentialsString = headers.getFirst("extracredentials");
-		String[] keyValues = credentialsString.split(",");
-		for (String kv: keyValues){
-			String[] s = kv.split(":");
-			credentialsMap.put(s[0].trim(), s[1].trim());
-		}
-		
-		// update password
-		credentialsMap.put("password", credentialsMap.get("password")+credentialsMap.get("secret_token"));
-	}
+	
 
 	public QueryResult executeQuery(String query, String reqTypes) {
 		// TODO Auto-generated method stub
@@ -226,7 +212,7 @@ public class SFExecutor {
 			tables.add(s.trim());
 	}
 
-	private String restCall(String endPoint, MultivaluedMap<String, String> params) {
+	protected String restCall(String endPoint, MultivaluedMap<String, String> params) {
 		
 		
 		Client client = Client.create();
@@ -253,7 +239,7 @@ public class SFExecutor {
 		return resultStr;
 	}
 
-	private void refreshAuthToken() {
+	protected void refreshAuthToken() {
 		if (!authToken.equals("NULL"))
 			return;
 		Client client = Client.create();
@@ -320,35 +306,7 @@ public class SFExecutor {
 		return CatalogResult.getTableColumns(descJson);
 	}
 
-	public static final String DESCRIPTION = 
-			  "{\"apiVersion\": \"1.0\","
-			  + "\"instances\": ["
-			  + "{\"name\" : \"Salesforce\","
-			  + "\"properties\": {\"hasSchema\" : \"false\", \"async\" : \"false\", "
-			  +                   "\"hasQuerySchema\":\"true\", "
-			  +                   "\"dateFormat\":\"yyyy-MM-dd\","
-			  +                   " \"dateTimeFormat\":\"yyyy-MM-dd'T'HH:mm:ss.SSS\"},"
-			  + " \"instanceParams\": [\"client_secret\", \"client_id\"],"
-			  + " \"connectionParams\" : [\"username\", \"password\",\"secret_token\"]"
-			  		+ "}]}";
 	
-	public String describe() {
-		// TODO Auto-generated method stub
-		try {
-			JsonNode n = new ObjectMapper().readValue(DESCRIPTION, JsonNode.class);
-			 return n.toString();
-		} catch (JsonParseException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (JsonMappingException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		return null;
-	}
 
 	public String validateCredentials() {
 		// TODO Auto-generated method stub

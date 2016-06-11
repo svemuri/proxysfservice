@@ -63,9 +63,12 @@ public class QueryResult{
 		for (Iterator<String> it = node.getFieldNames(); it.hasNext();){
 			String en = it.next();
 			JsonNode n = node.get(en);
+			
 			if (n.isValueNode() || n.isMissingNode()) {
 				String typeName = "String";
 				String fieldName = getFullFieldName(pathName, en);
+				if (fieldName.startsWith("attributes"))
+					continue;
 				if (m_outputSchema != null && !m_outputSchema.isEmpty() &&
 						m_outputSchema.containsKey(fieldName))
 					typeName = m_outputSchema.get(fieldName);
@@ -115,6 +118,9 @@ public class QueryResult{
 		boolean first = true;
 		for (Iterator<String> it = node.getFieldNames(); it.hasNext();){
 			String en = it.next();
+			
+			if (en.equalsIgnoreCase("attributes"))
+				continue;
 			JsonNode n = node.get(en);
 			if (n.isValueNode() || n.isMissingNode()) {
 				recordValues.add((n.isNull() ? null : n.asText()));
