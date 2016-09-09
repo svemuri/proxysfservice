@@ -111,11 +111,21 @@ public class CatalogResult {
 		}
 		public String tableName;
 		public List<TableColumnDescriptor> columns = new ArrayList<TableColumnDescriptor>();
+		public Map<String, String> attributes = new HashMap<String, String>();
 		public TableDescriptor(String tableName,
 				List<TableColumnDescriptor> columns) {
 			super();
 			this.tableName = tableName;
 			this.columns = columns;
+		}
+		
+		public TableDescriptor(String tableName,
+				List<TableColumnDescriptor> columns,
+				Map<String, String> attrs) {
+			super();
+			this.tableName = tableName;
+			this.columns = columns;
+			this.attributes = attrs;
 		}
 		
 	}

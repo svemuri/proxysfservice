@@ -1,7 +1,11 @@
 package proxysf;
 
 
+import java.io.BufferedInputStream;
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map.Entry;
@@ -18,9 +22,12 @@ import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.node.ArrayNode;
 import org.codehaus.jackson.node.ObjectNode;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.InputStreamResource;
+import org.springframework.http.ResponseEntity;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -50,6 +57,14 @@ public class SFController {
 			  + "\"properties\": {\"hasSchema\" : \"false\", \"async\" : \"false\", "
 			  +                   "\"hasQuerySchema\":\"false\", "
 			  +                   "\"dateFormat\":\"yyyy-MM-dd\","
+			  +                   " \"dateTimeFormat\":\"yyyy-MM-dd'T'HH:mm:ss.SSS\"},"
+			  + " \"instanceParams\": [\"client_secret\", \"client_id\"],"
+			  + " \"connectionParams\" : [\"username\", \"password\",\"secret_token\"]},"
+			  + "{\"name\" : \"proxyfileservice\","
+			  + "\"properties\": {\"hasSchema\" : \"false\", \"async\" : \"false\", "
+			  +                   "\"hasQuerySchema\":\"false\", "
+			  +                   "\"dateFormat\":\"yyyy-MM-dd\","
+			  +                   "\"isFileService\":\"true\","
 			  +                   " \"dateTimeFormat\":\"yyyy-MM-dd'T'HH:mm:ss.SSS\"},"
 			  + " \"instanceParams\": [\"client_secret\", \"client_id\"],"
 			  + " \"connectionParams\" : [\"username\", \"password\",\"secret_token\"]},"
@@ -85,8 +100,26 @@ public class SFController {
 		return null;
 	}
 	
+	private boolean isFileService(String iname){
+		String isFileService = scontext.getInitParameter("IS_FILE_SERVICE");
+    	if (isFileService.equalsIgnoreCase("true"))
+    		return true;
+    	if (iname != null && iname.equalsIgnoreCase("proxyfileservice"))
+    		return true;
+    	return false;
+    			
+	}
     private SFExecutor createExecutor(MultiValueMap<String, String> headers){
-    	String iname = headers.getFirst("instanceName");
+    	String iname = null;
+  
+    	
+    	if (headers.containsKey("instanceName"))
+    		iname = headers.getFirst("instanceName");
+    	
+
+    	if (isFileService(iname))
+    		return new FileSystemExecutor(headers, scontext);
+    	
     	if (iname == null || iname.trim().equalsIgnoreCase("salesforce"))
     		return new SFExecutor(headers);
     	else if (iname.trim().equalsIgnoreCase("salesforceuntyped") ||
@@ -138,17 +171,33 @@ public class SFController {
     		        @RequestParam(value="tablePattern", defaultValue="") String tablePattern,
     		        @RequestParam(value="table", defaultValue="") String tableName){
     	if (tableName== null || tableName.equalsIgnoreCase(""))
-    		return new SFExecutor(headers).getTables(schema);
+    		return createExecutor(headers).getTables(schema);
+    	else 
+    		return getOneTableColumns(headers, tableName);
     	
-    	List<TableColumnDescriptor> columns =
+    }
+
+	private List<TableDescriptor> getOneTableColumns(
+			MultiValueMap<String, String> headers, String tableName) {
+		List<TableColumnDescriptor> columns =
     			new SFExecutor(headers).getTableColumns(tableName);
     	List<TableDescriptor>  result =
     			new ArrayList<TableDescriptor>();
     	result.add(new TableDescriptor(tableName,columns));
     	return result;
-    	
-    }
+	}
     
+	@RequestMapping(value = "/getFile", method = RequestMethod.GET, produces = "application/text")
+	public ResponseEntity<InputStreamResource> downloadFile(
+			@RequestParam(value="name") String filePath)
+	        throws IOException {
+
+	    InputStream is = new BufferedInputStream(new FileInputStream(filePath));
+	    return ResponseEntity
+	            .ok()
+	            
+	            .body(new InputStreamResource(is));
+	}
 }
 
 

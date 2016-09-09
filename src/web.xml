@@ -7,6 +7,14 @@
         <param-value>TomcatApplication</param-value>
     </context-param>
    <context-param>
+        <param-name>IS_FILE_SERVICE</param-name>
+        <param-value>true</param-value>
+    </context-param>
+   <context-param>
+        <param-name>FILE_SYSTEM_ROOT</param-name>
+        <param-value>/scratch/ssvemuri/tomcat</param-value>
+    </context-param>
+   <context-param>
         <param-name>SECURE_ENDPOINT</param-name>
         <param-value>https://slc02ftl.us.oracle.com:8443/proxysfservice-0.1.0</param-value>
     </context-param>
