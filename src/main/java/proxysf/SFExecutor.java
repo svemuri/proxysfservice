@@ -7,6 +7,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.io.InputStream;
+import java.io.IOException;
 
 import javax.ws.rs.core.MultivaluedMap;
 import javax.xml.bind.DatatypeConverter;
@@ -16,6 +18,7 @@ import org.codehaus.jackson.JsonParseException;
 import org.codehaus.jackson.map.JsonMappingException;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.springframework.util.MultiValueMap;
+import org.apache.commons.io.IOUtils;
 
 import proxysf.CatalogResult.TableColumnDescriptor;
 import proxysf.CatalogResult.TableDescriptor;
@@ -28,10 +31,10 @@ import com.sun.jersey.core.util.MultivaluedMapImpl;
 
 
 public class SFExecutor {
-	private  Map<String,String> credentialsMap = new HashMap<String,String>();
+	protected  Map<String,String> credentialsMap = new HashMap<String,String>();
 	
 	
-	private String authToken="NULL";
+	private String authToken=null;
 	private String authURL = 
 			"https://login.salesforce.com/services/oauth2/token";
 	private String baseURL = "https://na22.salesforce.com/services/data/v20.0";
@@ -40,14 +43,22 @@ public class SFExecutor {
 
 	private QueryResult queryResult = null;
 	
-	private void printHttpHeaders(MultiValueMap<String, String> headers) {
+	protected void printHttpHeaders(MultiValueMap<String, String> headers) {
 		// TODO Auto-generated method stub
 		for (Entry<String, List<String>> entry : headers.entrySet()) {
-			  System.out.println("http header key = " + entry.getKey());
-			  System.out.print(" value = " );
-			  for (String v: entry.getValue())
-				  System.out.print(" " + v);
-			  System.out.println("");
+			System.out.println("http header key = " + entry.getKey());
+
+			System.out.print(" value = " );
+			for (String v: entry.getValue())
+			{
+				if (entry.getKey().equalsIgnoreCase("Authorization")) {
+					String v1 = new String(DatatypeConverter.parseBase64Binary(v));
+					System.out.print(" "+ v1 + " " + v);
+				}
+				else
+					System.out.print(" " + v);
+			}
+			System.out.println("");
 		}
 	}
 
@@ -76,6 +87,21 @@ public class SFExecutor {
 		 credentialsMap.put("client_secret","8242008647031813452");
 	}
 	
+	private void setDefaultCredentials1(){
+		InputStream in = SFExecutor.class.getClassLoader().getResourceAsStream("connmeta.json");
+ 	    String connection_json = null;
+ 	    try {
+ 	      connection_json = IOUtils.toString(in, "UTF-8");
+ 	    }
+ 	    catch (IOException e) {
+ 	    	throw new RuntimeException("Conversion of file input stream to string failed");
+ 	    }
+ 	    System.out.println("Default Connection json set to " + connection_json);
+ 	    ConnectionJsonParser.parse(connection_json, credentialsMap);
+		credentialsMap.put("password", credentialsMap.get("password")+credentialsMap.get("secret_token"));
+ 	    
+	}
+	
 	private void setCredentials(MultiValueMap<String, String> headers) {
 		
 		
@@ -85,12 +111,12 @@ public class SFExecutor {
 			return;
 		}
 		
-		setDefaultCredentials();
+		setDefaultCredentials1();
 		
 		
 	}
 
-	private void setConnectionJsonParams(MultiValueMap<String, String> headers) {
+	protected void setConnectionJsonParams(MultiValueMap<String, String> headers) {
 		String connection_json_param = headers.getFirst("connection_json");
 		
 		String connection_json = new String(DatatypeConverter.parseBase64Binary(connection_json_param));
@@ -240,7 +266,7 @@ public class SFExecutor {
 	}
 
 	protected void refreshAuthToken() {
-		if (!authToken.equals("NULL"))
+		if (authToken != null)
 			return;
 		Client client = Client.create();
 		MultivaluedMap<String, String> params = new MultivaluedMapImpl();
@@ -300,7 +326,8 @@ public class SFExecutor {
 
 	}
 
-	public List<TableColumnDescriptor> getTableColumns(String tableName) {
+	public List<TableColumnDescriptor> getTableColumns(String tableName) 
+	{
 		refreshAuthToken();
 		String descJson = restCall(catalogURL+"/"+tableName+"/describe", null);
 		return CatalogResult.getTableColumns(descJson);
@@ -308,11 +335,28 @@ public class SFExecutor {
 
 	
 
-	public String validateCredentials() {
+	public String validateCredentials() 
+	{
 		// TODO Auto-generated method stub
-		refreshAuthToken();
-		return "{\"status\" : \"OK\"}";
+		try {
+			refreshAuthToken();
+		}
+		catch (Exception e){
+			e.printStackTrace();
+		}
+		finally {
+			if (authToken == null)
+				return "{\"status\": \"INVALID CREDENTIALS\"}";
+			return "{\"status\" : \"OK\"}";
+		}
 	}
+
+	public InputStream getFile(String filePath) throws IOException {
+		// TODO Auto-generated method stub
+		return null;
+	}
+	
+	
 
 
 	/*

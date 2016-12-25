@@ -49,6 +49,8 @@ public class QueryResult{
 	private void getFieldNames(JsonNode records, String pathName){
 		ArrayNode r = (ArrayNode) records;
 		JsonNode firstRecord = r.get(0);
+		if (firstRecord == null)
+			return;
 		if (firstRecord.isObject())
 			getFieldNamesFromObjectNode(firstRecord, pathName);
 		return;
@@ -91,6 +93,13 @@ public class QueryResult{
 			JsonNode node = (JsonNode) mapper.readValue(resultStr, JsonNode.class);
 			getFieldNames(node.get("records"), "");
 			
+			// special handling for queries that return empty result
+			if (m_outputSchema != null && fieldNames.size() == 0 && m_outputSchema.size() !=0)
+			{
+				for (String k: m_outputSchema.keySet())
+					fieldNames.add(m_outputSchema.get(k) + " " +k);
+			}
+			
 			getRecordValues(node.get("records"), "");
 		} catch (JsonParseException e) {
 			// TODO Auto-generated catch block
@@ -106,8 +115,10 @@ public class QueryResult{
 
 	private void getRecordValues(JsonNode jsonNode, String string) {
 		ArrayNode n = (ArrayNode) jsonNode;
+		if (n == null) return;
 		for (Iterator<JsonNode> it = n.getElements(); it.hasNext();){
 			JsonNode e = it.next();
+			if (e == null) continue;
 			addRecord(e);
 		}
 		

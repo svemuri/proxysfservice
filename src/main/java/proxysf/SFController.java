@@ -45,22 +45,10 @@ public class SFController {
     private final AtomicLong counter = new AtomicLong();
     protected static final String DESCRIPTION = 
 			  "{\"apiVersion\": \"1.0\","
+    		  + "\"vendor-name\" : \"ssvemuri-rest-adapter\","
 			  + "\"instances\": ["
-			  + "{\"name\" : \"Salesforce\","
-			  + "\"properties\": {\"hasSchema\" : \"false\", \"async\" : \"false\", "
-			  +                   "\"hasQuerySchema\":\"true\", "
-			  +                   "\"dateFormat\":\"yyyy-MM-dd\","
-			  +                   " \"dateTimeFormat\":\"yyyy-MM-dd'T'HH:mm:ss.SSS\"},"
-			  + " \"instanceParams\": [\"client_secret\", \"client_id\"],"
-			  + " \"connectionParams\" : [\"username\", \"password\",\"secret_token\"]},"
-			  + "{\"name\" : \"Salesforcent\","
-			  + "\"properties\": {\"hasSchema\" : \"false\", \"async\" : \"false\", "
-			  +                   "\"hasQuerySchema\":\"false\", "
-			  +                   "\"dateFormat\":\"yyyy-MM-dd\","
-			  +                   " \"dateTimeFormat\":\"yyyy-MM-dd'T'HH:mm:ss.SSS\"},"
-			  + " \"instanceParams\": [\"client_secret\", \"client_id\"],"
-			  + " \"connectionParams\" : [\"username\", \"password\",\"secret_token\"]},"
-			  + "{\"name\" : \"proxyfileservice\","
+			  +  "{\"name\" : \"proxyfileservice\","
+			  +   "\"provider-version\":\"1.0\","
 			  + "\"properties\": {\"hasSchema\" : \"false\", \"async\" : \"false\", "
 			  +                   "\"hasQuerySchema\":\"false\", "
 			  +                   "\"dateFormat\":\"yyyy-MM-dd\","
@@ -68,7 +56,27 @@ public class SFController {
 			  +                   " \"dateTimeFormat\":\"yyyy-MM-dd'T'HH:mm:ss.SSS\"},"
 			  + " \"instanceParams\": [\"client_secret\", \"client_id\"],"
 			  + " \"connectionParams\" : [\"username\", \"password\",\"secret_token\"]},"
-			  + "{\"name\" : \"Salesforcessl\","
+			  +  "{\"name\" : \"opscs-adaptersvc\","
+			  +   "\"provider-version\":\"1.0\","
+			  + "\"properties\": {\"hasSchema\" : \"false\", \"async\" : \"false\", "
+			  +                   "\"hasQuerySchema\":\"false\", "
+			  +                   "\"hasObjectTypes\" :\"true\","
+			  +                   "\"dateFormat\":\"yyyy-MM-dd\","
+			  +                   "\"isFileService\":\"true\","
+			  +                   "\"hasObjectMetadata\":\"true\","
+			  +                   " \"dateTimeFormat\":\"yyyy-MM-dd'T'HH:mm:ss.SSS\"},"
+			  + " \"instanceParams\": [\"catalogURL\", \"queryURL\"],"
+			  + " \"connectionParams\" : [\"username\", \"password\"]},"
+			  + "{\"name\" : \"Salesforcent\","
+			  +  "\"provider-version\":\"1.0\","
+              + "\"properties\": {\"hasSchema\" : \"false\", \"async\": \"false\", "
+              +                   "\"hasQuerySchema\":\"false\", "
+              +                   "\"dateFormat\":\"yyyy-MM-dd\","
+              +                   "\"dateTimeFormat\":\"yyyy-MM-dd'T'HH:mm:ss.SSS\"},"
+              + " \"instanceParams\": [\"client_secret\", \"client_id\"],"
+              + " \"connectionParams\" : [\"username\",\"password\",\"secret_token\"]},"
+              + "{\"name\" : \"Salesforcessl\","
+              +  "\"provider-version\":\"1.0\","
 			  + "\"properties\": {\"hasSchema\" : \"false\", \"async\" : \"false\", "
 			  +                   "\"hasQuerySchema\":\"true\", \"isSSLEnabled\":\"true\", "
 			  +                   "\"dateFormat\":\"yyyy-MM-dd\","
@@ -100,25 +108,31 @@ public class SFController {
 		return null;
 	}
 	
-	private boolean isFileService(String iname){
+	private boolean isFileService(String iname)
+	{
 		String isFileService = scontext.getInitParameter("IS_FILE_SERVICE");
-    	if (isFileService.equalsIgnoreCase("true"))
+    	if (isFileService != null && isFileService.equalsIgnoreCase("true"))
     		return true;
+    	System.out.println("instance name = " + iname);
     	if (iname != null && iname.equalsIgnoreCase("proxyfileservice"))
     		return true;
     	return false;
     			
 	}
+	
+	private boolean isPCSService(String iname)
+	{
+		return (iname != null && iname.equalsIgnoreCase("opscs-adaptersvc"));
+	}
+	
     private SFExecutor createExecutor(MultiValueMap<String, String> headers){
-    	String iname = null;
-  
-    	
-    	if (headers.containsKey("instanceName"))
-    		iname = headers.getFirst("instanceName");
+    	String iname = getInstanceName(headers);
     	
 
     	if (isFileService(iname))
     		return new FileSystemExecutor(headers, scontext);
+    	else if (isPCSService(iname))
+    		return new PCSExecutor(headers);
     	
     	if (iname == null || iname.trim().equalsIgnoreCase("salesforce"))
     		return new SFExecutor(headers);
@@ -130,6 +144,17 @@ public class SFController {
     		
     	throw new RuntimeException("unknown instance name = " + iname);
     }
+
+	private String getInstanceName(MultiValueMap<String, String> headers) {
+		String iname = null;
+  
+    	
+    	if (headers.containsKey("instanceName"))
+    		iname = headers.getFirst("instanceName");
+    	else if (headers.containsKey("instancename"))
+    		iname = headers.getFirst("instancename");
+		return iname;
+	}
     
     
     @RequestMapping("/Query")
@@ -140,6 +165,7 @@ public class SFController {
         return new SFExecutor(headers).executeQuery(query, reqTypes);
     }
     
+   
     @RequestMapping("/Describe")
     public String getDescription(@RequestHeader MultiValueMap<String,String> headers) { 
     		
@@ -178,9 +204,10 @@ public class SFController {
     }
 
 	private List<TableDescriptor> getOneTableColumns(
-			MultiValueMap<String, String> headers, String tableName) {
+			MultiValueMap<String, String> headers, String tableName) 
+	{
 		List<TableColumnDescriptor> columns =
-    			new SFExecutor(headers).getTableColumns(tableName);
+    			createExecutor(headers).getTableColumns(tableName);
     	List<TableDescriptor>  result =
     			new ArrayList<TableDescriptor>();
     	result.add(new TableDescriptor(tableName,columns));
@@ -189,10 +216,13 @@ public class SFController {
     
 	@RequestMapping(value = "/getFile", method = RequestMethod.GET, produces = "application/text")
 	public ResponseEntity<InputStreamResource> downloadFile(
+			@RequestHeader MultiValueMap<String,String> headers,
 			@RequestParam(value="name") String filePath)
-	        throws IOException {
+	        throws IOException 
+	{
 
-	    InputStream is = new BufferedInputStream(new FileInputStream(filePath));
+		
+	    InputStream is = createExecutor(headers).getFile(filePath);
 	    return ResponseEntity
 	            .ok()
 	            

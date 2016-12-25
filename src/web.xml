@@ -7,12 +7,8 @@
         <param-value>TomcatApplication</param-value>
     </context-param>
    <context-param>
-        <param-name>IS_FILE_SERVICE</param-name>
-        <param-value>true</param-value>
-    </context-param>
-   <context-param>
         <param-name>FILE_SYSTEM_ROOT</param-name>
-        <param-value>/scratch/ssvemuri/tomcat</param-value>
+        <param-value>/scratch/ssvemuri/fsroot</param-value>
     </context-param>
    <context-param>
         <param-name>SECURE_ENDPOINT</param-name>

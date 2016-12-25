@@ -16,7 +16,7 @@ import org.codehaus.jackson.JsonParseException;
 
 
 public class CatalogResult {
-	private static Map<String, String> typeMap = new HashMap<String,String>();
+	protected static Map<String, String> typeMap = new HashMap<String,String>();
 	
 	static {
 		typeMap.put("double", "Float64");
@@ -26,6 +26,8 @@ public class CatalogResult {
 		typeMap.put("date", "Date");
 		typeMap.put("datetime", "Timestamp");
 		typeMap.put("int", "Int64");
+		typeMap.put("integer", "Int64");
+		typeMap.put("number", "Int64");
 		typeMap.put("time", "Time");
 		typeMap.put("base64", "Binary");
 		typeMap.put("byte", "Byte");

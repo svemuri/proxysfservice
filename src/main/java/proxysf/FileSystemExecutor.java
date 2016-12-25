@@ -64,7 +64,33 @@ public class FileSystemExecutor extends SFExecutor {
 			e.printStackTrace();
 		}
 	}
-		
+	
+	public InputStream getFile(String filePath) throws IOException
+	{
+		if (filePath.startsWith("object:"))
+		{
+			String objName = filePath.substring("object:".length());
+			System.out.println("OBJECT GET for " + objName);
+			return getObject(objName);
+		}
+		return new BufferedInputStream(new FileInputStream(filePath));
+	}
+	
+	public InputStream getObject(String objectName) throws IOException 
+	{
+		String s = readFile(objectName);
+		return new BufferedInputStream(new ByteArrayInputStream(s.getBytes("UTF-8")));
+	}
+	
+	public static String readFile(String fileName) throws IOException {
+        BufferedReader br = new BufferedReader(new FileReader(fileName));
+        String result = "";
+        String line;
+        while ((line = br.readLine()) != null)
+                result += line + "\n" ; //"\n";
+        return result;
+}
+
 	}
 
 
