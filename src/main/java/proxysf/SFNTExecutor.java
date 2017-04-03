@@ -10,12 +10,13 @@ import com.sun.jersey.core.util.MultivaluedMapImpl;
 
 public class SFNTExecutor extends SFExecutor {
 
-	public SFNTExecutor(MultiValueMap<String, String> headers) {
+	public SFNTExecutor(MultiValueMap<String, String> headers) throws ProcessingException {
 		super(headers);
 		// TODO Auto-generated constructor stub
 	}
 	
-	public QueryResult executeQuery(String query, String reqTypes) {
+	@Override
+	public QueryResult  executeQuery(String query, String reqTypes, String nextMarker, String url) throws ProcessingException {
 		// TODO Auto-generated method stub
 		refreshAuthToken();
 		

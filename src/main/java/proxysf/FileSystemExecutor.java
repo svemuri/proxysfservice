@@ -1,6 +1,7 @@
 package proxysf;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -9,25 +10,30 @@ import java.nio.file.*;
 
 import javax.servlet.ServletContext;
 
+import proxysf.CatalogResult.CatalogItem;
+import proxysf.CatalogResult.ListingResult;
 import org.springframework.util.MultiValueMap;
 
-import proxysf.CatalogResult.TableDescriptor;
-import proxysf.CatalogResult.*;
+
 
 
 public class FileSystemExecutor extends SFExecutor {
 
 	private String rootPath;
 
-	public FileSystemExecutor(MultiValueMap<String, String> headers, ServletContext scontext) {
+	public FileSystemExecutor(MultiValueMap<String, String> headers, ServletContext scontext) throws ProcessingException {
 		super(headers);
 		rootPath = scontext.getInitParameter("FILE_SYSTEM_ROOT");
 		// TODO Auto-generated constructor stub
 	}
 	
-	public List<TableDescriptor> getTables(String schema) {
+	public FileSystemExecutor(MultiValueMap<String, String> headers) throws ProcessingException {
+		super(headers);
+	}
+
+	public Object getFolderListing(String folderName) {
 		
-		List<TableDescriptor> result = new ArrayList<TableDescriptor>();
+		List<CatalogItem> result = new ArrayList<CatalogItem>();
 		
 		/*
 		Iterable<Path> rootdirs = FileSystems.getDefault().getRootDirectories();
@@ -35,13 +41,27 @@ public class FileSystemExecutor extends SFExecutor {
 			addAllFilePaths(result, dir);
 		}
 		*/
-		addAllFilePaths(result, Paths.get(rootPath));
-		return result;
+		if (folderName == null || folderName.equals(""))
+		{
+			HashMap<String, String> attrs = new HashMap<String, String>();
+			attrs.put("type", "directory");
+			return new ListingResult(Arrays.asList(new CatalogItem[]{new CatalogItem(null,"FS-ROOT", attrs)}));
+		}
+		else
+		{
+			if (folderName.equals("FS-ROOT"))
+				folderName = rootPath;
+			else
+				folderName = rootPath + "/"+folderName;
+			addAllFilePaths(result, Paths.get(folderName));
+			return new ListingResult(result);
+		}
+		
 		
 	}
 
-	private void addAllFilePaths(List<TableDescriptor> result, Path dir) {
-		// TODO Auto-generated method stub
+	private void addAllFilePaths(List<CatalogItem> result, Path dir) {
+		
 		DirectoryStream<Path> dirStream = null;
 		try {
 			dirStream = Files.newDirectoryStream(dir);
@@ -49,15 +69,15 @@ public class FileSystemExecutor extends SFExecutor {
 			for (Path pathName: dirStream){
 				Map<String, String> attrs = new HashMap<String,String>();
 				if (Files.isDirectory(pathName)){
-					attrs.put("fileType", "directory");
+					attrs.put("type", "directory");
 
-					addAllFilePaths(result, pathName);
+					//addAllFilePaths(result, pathName);
 				}
 				else {
-					attrs.put("fileType", "file");
+					attrs.put("type", "file");
 
 				}
-				result.add(new TableDescriptor(pathName.toString(), null, attrs));
+				result.add(new CatalogItem(null,Paths.get(rootPath).relativize(pathName).toString(),  attrs));
 			}
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
@@ -71,8 +91,10 @@ public class FileSystemExecutor extends SFExecutor {
 		{
 			String objName = filePath.substring("object:".length());
 			System.out.println("OBJECT GET for " + objName);
+			objName = rootPath + "/" + objName;
 			return getObject(objName);
 		}
+		filePath = rootPath + "/" + filePath;
 		return new BufferedInputStream(new FileInputStream(filePath));
 	}
 	

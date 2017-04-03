@@ -24,7 +24,7 @@ public class ConnectionJsonParser {
 	public static void parse(String content, Map<String, String> headerParams){
 		
 		try {
-			System.out.println("proxysf: parsing connection xml:" + content);
+			System.out.println("proxysf: parsing connection json:" + content);
 			
 			JsonNode connectionJson = new ObjectMapper().readValue(content, JsonNode.class);
 			

@@ -20,8 +20,11 @@ import org.codehaus.jackson.map.ObjectMapper;
 import org.springframework.util.MultiValueMap;
 import org.apache.commons.io.IOUtils;
 
-import proxysf.CatalogResult.TableColumnDescriptor;
-import proxysf.CatalogResult.TableDescriptor;
+import proxysf.CatalogResult.CatalogItem;
+import proxysf.CatalogResult.CollectionSchema;
+import proxysf.CatalogResult.FieldSchema;
+import proxysf.CatalogResult.ListingResult;
+import proxysf.CatalogResult.ObjectSchema;
 
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
@@ -37,13 +40,14 @@ public class SFExecutor {
 	private String authToken=null;
 	private String authURL = 
 			"https://login.salesforce.com/services/oauth2/token";
+	private String authExtension = "services/oauth2/token";
 	private String baseURL = "https://na22.salesforce.com/services/data/v20.0";
 	protected String queryURL = baseURL+"/query";
 	private String catalogURL = baseURL+"/sobjects";
 
 	private QueryResult queryResult = null;
 	
-	protected void printHttpHeaders(MultiValueMap<String, String> headers) {
+	protected void printHttpHeaders(MultiValueMap<String, String> headers) throws ProcessingException {
 		// TODO Auto-generated method stub
 		for (Entry<String, List<String>> entry : headers.entrySet()) {
 			System.out.println("http header key = " + entry.getKey());
@@ -54,6 +58,7 @@ public class SFExecutor {
 				if (entry.getKey().equalsIgnoreCase("Authorization")) {
 					String v1 = new String(DatatypeConverter.parseBase64Binary(v));
 					System.out.print(" "+ v1 + " " + v);
+					checkCredentials(v1);
 				}
 				else
 					System.out.print(" " + v);
@@ -62,7 +67,19 @@ public class SFExecutor {
 		}
 	}
 
-	public SFExecutor(MultiValueMap<String, String> headers) {
+	private void checkCredentials(String v1) throws ProcessingException {
+		String uname, password;
+		
+		String s= v1.substring("Basic".length()).trim();
+		String[] splits = s.split(":");
+		if (!(splits[0].equals("SF_PROXYSVC_USER") && splits[1].equals("SF_PROXYSVC_PASSWORD")))
+			throw new ProcessingException("Invalid credentials. Please check username/password " + splits[0] + " " + splits[1]);
+			
+				
+		
+	}
+
+	public SFExecutor(MultiValueMap<String, String> headers) throws ProcessingException {
 		printHttpHeaders(headers);
 
 		setCredentials(headers);
@@ -74,18 +91,7 @@ public class SFExecutor {
 
 	}
 
-	private void setDefaultCredentials(){
-		
-		System.out.println("WARNING: using default credentials");
-		 credentialsMap.put("client_id",
-				 "3MVG9uudbyLbNPZMW7oSwnN.yHSlxNubseBtc7DL07sZciATwb0.c1KXyWvmiSbGqL5GQakxPyNQ.nuwa0me4");
-		 credentialsMap.put("username",  "johny.cash3456@gmail.com");
-		 credentialsMap.put("password", "newpassword1" + "PvVASeCDwAR8QpnMjVfItGGJA");
-				
-		
-		
-		 credentialsMap.put("client_secret","8242008647031813452");
-	}
+	
 	
 	private void setDefaultCredentials1(){
 		InputStream in = SFExecutor.class.getClassLoader().getResourceAsStream("connmeta.json");
@@ -126,12 +132,13 @@ public class SFExecutor {
 
 	
 
-	public QueryResult executeQuery(String query, String reqTypes) {
+	public QueryResult executeQuery(String query, String reqTypes, String nextMarker, String url) throws ProcessingException {
 		// TODO Auto-generated method stub
 		refreshAuthToken();
 		
 		boolean getTypes = Boolean.parseBoolean(reqTypes);
 		Map<String, String> outputSchema = null;
+		System.out.println("Received query = " + query);
 		if (getTypes)
 			outputSchema = getQueryReturnTypes(query);
 		MultivaluedMap<String, String> params = new MultivaluedMapImpl();
@@ -139,23 +146,23 @@ public class SFExecutor {
 		params.add("q", query);
 
 		System.out.println("Query url = " + queryURL);
-		System.out.println("Received query = " + query);
+		
 		String resultStr = restCall(queryURL, params);
 		System.out.println("Query output = " + resultStr);
 		return new QueryResult(resultStr, outputSchema);
 	}
 
-	private Map<String, String> getQueryReturnTypes(String query) {
+	private Map<String, String> getQueryReturnTypes(String query) throws ProcessingException {
 		Map<String, String> querySchema = new HashMap<String, String>();
 		List<String> tables = new ArrayList<String>();
 		List<String> queryColumnNames = new ArrayList<String>();
 		
 		simpleQueryParse(query, tables, queryColumnNames);
-		List<List<TableColumnDescriptor>> tableSchemas =
-				new ArrayList<List<TableColumnDescriptor>>();
+		List<ObjectSchema> tableSchemas =
+				new ArrayList<ObjectSchema>();
 		
 		for (String t: tables){
-			List<TableColumnDescriptor> tcols = getTableColumns(t);
+			ObjectSchema tcols = getTableColumns(t).getProperties().get("items").getItems();
 			tableSchemas.add(tcols);
 		}
 		
@@ -169,42 +176,42 @@ public class SFExecutor {
 
 	private String getMatchingTableColumnType(String queryColumn,
 			List<String> tables,
-			List<List<TableColumnDescriptor>> tableSchemas) 
+			List<ObjectSchema> tableSchemas) 
 	{
 		for (int i=0; i < tables.size(); i++){
 			String tableName = tables.get(i);
-			List<TableColumnDescriptor> ts = tableSchemas.get(i);
-			TableColumnDescriptor tcd = getQualifyingMatch(tableName, ts, queryColumn);
+			ObjectSchema ts = tableSchemas.get(i);
+			FieldSchema tcd = getQualifyingMatch(tableName, ts, queryColumn);
 			if (tcd != null)
-				return tcd.getColumnType();
+				return tcd.getType();
 		}
 		
-		for (List<TableColumnDescriptor> ts: tableSchemas){
-			TableColumnDescriptor tcd = getNonQualifyingMatch(ts, queryColumn);
+		for (ObjectSchema ts: tableSchemas){
+			FieldSchema tcd = getNonQualifyingMatch(ts, queryColumn);
 			if (tcd != null)
-				return tcd.getColumnType();
+				return tcd.getType();
 		}
 		return null;
 	}
 
-	private TableColumnDescriptor getNonQualifyingMatch(
-			List<TableColumnDescriptor> ts, String queryColumn) {
+	private FieldSchema getNonQualifyingMatch(
+			ObjectSchema ts, String queryColumn) {
 		
 		String baseColumn = getBaseColumn(queryColumn);
-		for (TableColumnDescriptor tc: ts){
-			if (queryColumn.equalsIgnoreCase(tc.getColumnName()))
-				return tc;
+		for (Entry<String, FieldSchema> col: ts.getProperties().entrySet()){
+			if (queryColumn.equalsIgnoreCase(col.getKey()))
+				return col.getValue();
 		}
 		return null;
 	}
 
-	private TableColumnDescriptor getQualifyingMatch(String tableName,
-			List<TableColumnDescriptor> ts, String queryColumn) {
+	private FieldSchema getQualifyingMatch(String tableName,
+			ObjectSchema ts, String queryColumn) {
 		
 		String baseColumn = getBaseColumn(queryColumn);
-		for (TableColumnDescriptor tc: ts){
-			if (queryColumn.equalsIgnoreCase(tableName+"."+ tc.getColumnName()))
-				return tc;
+		for (Entry<String, FieldSchema> col: ts.getProperties().entrySet()){
+			if (queryColumn.equalsIgnoreCase(tableName+"."+ col.getKey()))
+				return col.getValue();
 		}
 		return null;
 	}
@@ -217,7 +224,7 @@ public class SFExecutor {
 			List<String> queryColumnNames) {
 		
 		String query1 = query.trim().toLowerCase();
-		int fromIdx = query1.indexOf("from");
+		int fromIdx = query1.indexOf(" from ");
 		
 		String columnList = query.substring("select".length(), fromIdx).trim();
 		System.out.println("query parse columns = " + columnList);
@@ -225,7 +232,7 @@ public class SFExecutor {
 		for (String s: columns)
 			queryColumnNames.add(s.trim());
 		
-		String endFragment = query.substring(fromIdx + "from".length()).trim();
+		String endFragment = query.substring(fromIdx + " from ".length()).trim();
 		String tablesFragment = endFragment.split("\\s+")[0].trim();
 		
 		System.out.println("tablesFragment = " + tablesFragment);
@@ -238,7 +245,7 @@ public class SFExecutor {
 			tables.add(s.trim());
 	}
 
-	protected String restCall(String endPoint, MultivaluedMap<String, String> params) {
+	protected String restCall(String endPoint, MultivaluedMap<String, String> params) throws ProcessingException {
 		
 		
 		Client client = Client.create();
@@ -255,9 +262,10 @@ public class SFExecutor {
 
 		
 		if (response.getStatus() != 200) {
-			System.out.println("error response = " + response.getEntity(String.class));
-			throw new RuntimeException("Failed trying to execute query: HTTP error code : "
-					+ response.getStatus());
+			String resp = response.getEntity(String.class);
+			System.out.println("error response = " + resp );
+			throw new ProcessingException("Failed trying to execute query: HTTP error code : "
+					+ response.getStatus() + ", ERROR DETAIL = {" + resp + "}");
 		}
 
 		String resultStr = response.getEntity(String.class);
@@ -274,6 +282,12 @@ public class SFExecutor {
 		params.add("grant_type", "password");
 		addCredentialParameters(params);
 
+		if (credentialsMap.containsKey("authDomain"))
+		{
+			authURL = credentialsMap.get("authDomain") + "/" + authExtension;
+			System.out.println("authURL modified to " + authURL);
+		}
+			
 		WebResource webResource = client.resource(authURL);
 
 		ClientResponse response = webResource
@@ -283,7 +297,7 @@ public class SFExecutor {
 
 		if (response.getStatus() != 200) {
 			throw new RuntimeException("Failed trying to obtain auth token : HTTP error code : "
-					+ response.getStatus());
+					+ response.getStatus() + " : " + response.getEntity(String.class));
 		}
 
 		String output = response.getEntity(String.class);
@@ -317,20 +331,20 @@ public class SFExecutor {
 		return queryResult;
 	}
 
-	public List<TableDescriptor> getTables(String schema) {
+	public ListingResult getTables(String schema) throws ProcessingException {
 		// TODO Auto-generated method stub
 		refreshAuthToken();
 		String sobjectsJson = restCall(catalogURL, null);
-		List<TableDescriptor> result = CatalogResult.getTables(sobjectsJson);
-		return result;
+		return CatalogResult.getTables(sobjectsJson);
+		
 
 	}
 
-	public List<TableColumnDescriptor> getTableColumns(String tableName) 
+	public CollectionSchema getTableColumns(String tableName) throws ProcessingException 
 	{
 		refreshAuthToken();
 		String descJson = restCall(catalogURL+"/"+tableName+"/describe", null);
-		return CatalogResult.getTableColumns(descJson);
+		return CatalogResult.getTableColumns(tableName,descJson);
 	}
 
 	
