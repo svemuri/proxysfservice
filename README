@@ -1,0 +1,42 @@
+This application uses the spring rest framework to build a web application that implements the 3rd party rest api specification.
+It implements two separate adapter instances.
+1. salesforcessl - a relational instance that provides connectivity to salesforce rest api
+2. proxyfileservice - a file system instance that returns file objects from a specified root directory. 
+
+A useful tutorial on building a Hello World Rest application using the spring framework is available here.
+https://spring.io/guides/gs/rest-service/
+
+SFController is the class that implements the rest end points.
+The responses are returned as JSON by the framework, but we use standard java classes to represent them internally. 
+CatalogResult.ListingResult : lists of schemas, table-names, or file-names.
+CatalogResult.CatalogItem: represents a single item from a catalog.
+CatalogResult.CollectionSchema: schema of a single table. It is nothing but an arraylist of ObjectSchemas.
+QueryResult: represents the type for a QueryResult. It has a metadata field of type CollectionSchema, an arraylist of items i.e records of type Map<String,String> and an array list of LinkDescriptor to represent relationship links (only used for paged query results).
+
+
+"/"
+getDescription0() is the end point for the adapter metadata. The static adapter meta-data is provided from the file provider-instances.json
+
+{instanceName}/{version}/Validate
+This implements the method that validates user specified credentials. It is implemented by refreshing the authentication token with salesforce.
+
+{instanceName}/{version}/metadata-catalog)
+metadataCatalogRootQuery returns the top schemas. There is only one top schema "RESTADAPTER_SCHEMA" surfaced by this adapter.
+The returned object type is ListingResult
+
+"{instanceName}/{version}/metadata-catalog/{schemaName:.+}"
+metadataCatalogListObjects is the method that returns a listing of objects under a specified schema.  
+The returned object type is ListingResult.
+
+ "{instanceName}/{version}/metadata-catalog/object-schema"
+metadataCatalogGetObjectSchema() is the method that returns a description
+of the schema of an object. The returned object type is CollectionSchema
+
+"{instanceName}/{version}/metadata-catalog/list"
+metadataCatalogGetFolderListing() is the method that returns the listing of folders under optionally a specified folder name (or the root folder if no containing folder is specified). The returned object type is ListingResult.
+
+"{instanceName}/{version}"
+downloadFile() is the method that returns a stream of records for a specified file from the file based instance. The returned type is a regular stream.
+
+"{instanceName}/{version}/Query"
+getQueryResult() is the method that executes a query with Salesforce and returns the result as a QueryResult object.

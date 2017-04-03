@@ -1,8 +1,7 @@
-{
-  "password":"newpassword2",
-   "client_secret":"8242008647031813452",
-   "instanceName":"Salesforcessl",
-   "client_id":"3MVG9uudbyLbNPZMW7oSwnN.yHSlxNubseBtc7DL07sZciATwb0.c1KXyWvmiSbGqL5GQakxPyNQ.nuwa0me4",
-    "secret_token":"IkQaL1JE0JKRvTkMRMlaDInxG",
-     "username":"johny.cash3456@gmail.com"
+{ "client_id" : "3MVG9uudbyLbNPZMW7oSwnN.yHSlxNubseBtc7DL07sZciATwb0.c1KXyWvmiSbGqL5GQakxPyNQ.nuwa0me4",
+  "client_secret" : "8242008647031813452",
+  "instanceName" : "Salesforcessl",
+  "password" : "newpassword4",
+  "secret_token" : "Ak5lw963TyHYCnFJBY3X9Tph5",
+  "username" : "johny.cash3456@gmail.com"
 }
