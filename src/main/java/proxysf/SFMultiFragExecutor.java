@@ -16,8 +16,8 @@ public class SFMultiFragExecutor extends SFExecutor {
 
 	
 
-	public SFMultiFragExecutor(MultiValueMap<String, String> headers) throws ProcessingException {
-		super(headers);
+	public SFMultiFragExecutor(MultiValueMap<String, String> headers, String denv) throws ProcessingException {
+		super(headers, denv);
 	
 	}
 	

@@ -4,7 +4,7 @@
     xsi:schemaLocation="http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_2_5.xsd">
     <context-param>
         <param-name>contextConfigLocation</param-name>
-        <param-value>TomcatApplication</param-value>
+        <param-value>WLSApplication</param-value>
     </context-param>
    <context-param>
         <param-name>FILE_SYSTEM_ROOT</param-name>

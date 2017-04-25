@@ -10,8 +10,8 @@ import com.sun.jersey.core.util.MultivaluedMapImpl;
 
 public class SFNTExecutor extends SFExecutor {
 
-	public SFNTExecutor(MultiValueMap<String, String> headers) throws ProcessingException {
-		super(headers);
+	public SFNTExecutor(MultiValueMap<String, String> headers, String denv) throws ProcessingException {
+		super(headers, denv);
 		// TODO Auto-generated constructor stub
 	}
 	

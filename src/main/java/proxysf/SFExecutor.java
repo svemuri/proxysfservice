@@ -17,6 +17,11 @@ import org.codehaus.jackson.JsonNode;
 import org.codehaus.jackson.JsonParseException;
 import org.codehaus.jackson.map.JsonMappingException;
 import org.codehaus.jackson.map.ObjectMapper;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
+import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.PropertySource;
 import org.springframework.util.MultiValueMap;
 import org.apache.commons.io.IOUtils;
 
@@ -34,6 +39,8 @@ import com.sun.jersey.core.util.MultivaluedMapImpl;
 
 
 public class SFExecutor {
+	
+	
 	protected  Map<String,String> credentialsMap = new HashMap<String,String>();
 	
 	
@@ -46,6 +53,9 @@ public class SFExecutor {
 	private String catalogURL = baseURL+"/sobjects";
 
 	private QueryResult queryResult = null;
+
+
+	private String deployEnv;
 	
 	protected void printHttpHeaders(MultiValueMap<String, String> headers) throws ProcessingException {
 		// TODO Auto-generated method stub
@@ -56,9 +66,8 @@ public class SFExecutor {
 			for (String v: entry.getValue())
 			{
 				if (entry.getKey().equalsIgnoreCase("Authorization")) {
-					String v1 = new String(DatatypeConverter.parseBase64Binary(v));
-					System.out.print(" "+ v1 + " " + v);
-					checkCredentials(v1);
+					
+					checkCredentials(v);
 				}
 				else
 					System.out.print(" " + v);
@@ -67,11 +76,14 @@ public class SFExecutor {
 		}
 	}
 
-	private void checkCredentials(String v1) throws ProcessingException {
+	private void checkCredentials(String v) throws ProcessingException {
 		String uname, password;
+		System.out.println("Deployenv = " + deployEnv);
 		
-		String s= v1.substring("Basic".length()).trim();
-		String[] splits = s.split(":");
+		String s= v.substring("Basic".length()).trim();
+		String v1 = new String(DatatypeConverter.parseBase64Binary(s));
+		System.out.print(" "+ v1 + " " + v);
+		String[] splits = v1.split(":");
 		if (!(splits[0].equals("SF_PROXYSVC_USER") && splits[1].equals("SF_PROXYSVC_PASSWORD")))
 			throw new ProcessingException("Invalid credentials. Please check username/password " + splits[0] + " " + splits[1]);
 			
@@ -79,7 +91,8 @@ public class SFExecutor {
 		
 	}
 
-	public SFExecutor(MultiValueMap<String, String> headers) throws ProcessingException {
+	public SFExecutor(MultiValueMap<String, String> headers, String deployEnv) throws ProcessingException {
+		this.deployEnv = deployEnv;
 		printHttpHeaders(headers);
 
 		setCredentials(headers);

@@ -3,9 +3,12 @@ buildscript {
         mavenCentral()
     }
     dependencies {
-        classpath("org.springframework.boot:spring-boot-legacy:1.0.2.RELEASE")
+        classpath("org.springframework.boot:spring-boot-legacy:1.0.0.RELEASE")
+        classpath("org.springframework:spring-web:3.0.5.RELEASE")
         classpath("org.springframework:spring-web:1.2.9")
         classpath("org.springframework.boot:spring-boot-gradle-plugin:1.3.0.RELEASE")
+        //classpath("org.springframework.security.oauth:spring-security-oauth2:1.0.0.RELEASE")
+        // classpath("org.springframework.boot:spring-boot-starter-security:1.0.0.RELEASE")
         classpath("org.apache.commons:commons-io:1.3.2")
     }
 }
@@ -16,16 +19,33 @@ apply plugin: 'eclipse'
 apply plugin: 'idea'
 apply plugin: 'spring-boot'
 
-war {
-    baseName = 'standardadapter'
-    version = '0.1.0'
-    webXml = file('src/web.xml')
+ext {
+    deployingOn = "Tomcat"
 }
 
-jar {
-    baseName = 'gs-rest-service'
-    version =  '0.1.0'
+task createFs{
+doLast {
+       println "Filesystem task"
+       def names = []
+       fileTree("src/main/resources/fsroot").visit { 
+             FileVisitDetails details -> names << details.getRelativePath().toString()+ ":" + details.getRelativePath().getParent().toString() 
+       }
+       println names
+
+       def fileTreeFile = new File("src/main/resources/filetree.txt")
+       fileTreeFile.write(names.toString())
+  }
 }
+
+war {
+    dependsOn createFs
+    baseName = 'standardadapter'
+    version = '0.1.0'
+    if (deployingOn == "Tomcat")
+      webXml = file('src/web.xml')
+}
+
+
 
 repositories {
     mavenCentral()
@@ -49,4 +69,15 @@ dependencies {
 
 task wrapper(type: Wrapper) {
     gradleVersion = '2.3'
+}
+
+sourceSets {
+    main {
+        java {
+            if( deployingOn == "Tomcat")
+                exclude '**/WLS*.java'
+            else
+                exclude '**/Tomcat*.java'
+        }
+    }
 }

@@ -28,6 +28,11 @@ import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.node.ArrayNode;
 import org.codehaus.jackson.node.ObjectNode;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
+import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.PropertySource;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -42,11 +47,16 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.fasterxml.jackson.core.JsonParseException;
 
-
+@Configuration
+@ComponentScan
+@PropertySource("classpath:application.properties")
+@EnableAutoConfiguration
 
 @RestController
 public class SFController {
-
+	@Value("${env}")
+	private String env;
+	
 	@Autowired 
 	ServletContext scontext;
     private static final String template = "Hello, %s!";
@@ -116,18 +126,18 @@ public class SFController {
     	
 
     	if (isFileService(iname))
-    		return new FileSystemExecutor(headers, scontext);
+    		return new FileSystemExecutor(headers, scontext, env);
     	
     	
     	if (iname == null || iname.trim().equalsIgnoreCase("salesforce"))
-    		return new SFExecutor(headers);
+    		return new SFExecutor(headers,env);
     	else if (iname.trim().equalsIgnoreCase("salesforceuntyped") ||
     			iname.trim().equalsIgnoreCase("salesforcent"))
-    		return new SFNTExecutor(headers);
+    		return new SFNTExecutor(headers,env);
     	else if (iname.trim().equalsIgnoreCase("SFMultiFrag"))
-    		return new SFMultiFragExecutor(headers);
+    		return new SFMultiFragExecutor(headers,env);
     	else if (iname.trim().equalsIgnoreCase("salesforcessl"))
-    		return new SFExecutor(headers);
+    		return new SFExecutor(headers,env);
     		
     	throw new RuntimeException("unknown instance name = " + iname);
     }
@@ -138,7 +148,7 @@ public class SFController {
     	
 
     	if (isFileService(iname))
-    		return new FileSystemExecutor(headers, scontext);
+    		return new FileSystemExecutor(headers, scontext,env);
     	
     	throw new RuntimeException("Not a fie system instance " + iname );
     	
@@ -179,7 +189,7 @@ public class SFController {
     public String validateCredentials(@RequestHeader MultiValueMap<String,String> headers) throws ProcessingException { 
     		
     	
-        return  new SFExecutor(headers).validateCredentials();
+        return  new SFExecutor(headers,env).validateCredentials();
     }
     
     @RequestMapping(value = "{instanceName}/{version}/metadata-catalog")

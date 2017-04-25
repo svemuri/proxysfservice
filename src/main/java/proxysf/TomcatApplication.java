@@ -18,7 +18,11 @@ public class TomcatApplication extends SpringBootServletInitializer {
 	    }
 
 	    public static void main(String[] args) throws Exception {
-	        SpringApplication.run(TomcatApplication.class, args);
+	    	//DeployEnv.getInstance().setEnv("Tomcat");
+	    	
+	    	new SpringApplicationBuilder(TomcatApplication.class).properties("env=Tomcat").run(args);
+	    	// String[] args1 = new String[]{"env=Tomcat"};
+	        // SpringApplication.run(TomcatApplication.class, args1);
 	    }
     
 
