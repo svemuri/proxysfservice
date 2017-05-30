@@ -87,7 +87,7 @@
             "provider-version":"1.0",
             "properties":{
                "hasSchema":"false",
-               "queryMode":"cache",
+               "queryMode":"cache_and_live",
                "async":"false",
                "hasQuerySchema":"false",
                "dateFormat":"yyyy-MM-dd",
@@ -127,7 +127,7 @@
             "name":"SFMultiFrag",
             "provider-version":"1.0",
             "properties":{
-               "queryMode":"cache_and_live",
+               "queryMode":"live",
                "hasSchema":"false",
                "async":"false",
                "hasQuerySchema":"false",

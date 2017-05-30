@@ -13,6 +13,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MultivaluedMap;
@@ -257,12 +258,14 @@ public class SFController {
     	return columns;
 	}
     
+	/*
 	@RequestMapping(value = "{instanceName}/{version}", method = RequestMethod.GET, produces = "application/text")
 	public ResponseEntity<InputStreamResource> downloadFile(
 			@PathVariable("instanceName") String instanceName,
 			@RequestParam(value="name", defaultValue="") String filePath,
 			
 			@RequestHeader MultiValueMap<String,String> headers)
+			
 			
 	        throws IOException, ProcessingException 
 	{
@@ -273,6 +276,23 @@ public class SFController {
 	            .ok()
 	            
 	            .body(new InputStreamResource(is));
+	}
+	*/
+	
+	@RequestMapping(value = "{instanceName}/{version}", method = RequestMethod.GET, produces = "application/text")
+	public void downloadFile(
+			@PathVariable("instanceName") String instanceName,
+			@RequestParam(value="name", defaultValue="") String filePath,
+			
+			@RequestHeader MultiValueMap<String,String> headers,
+			HttpServletResponse response)
+			
+	        throws IOException, ProcessingException 
+	{
+
+		
+	     createExecutor(headers, instanceName).getFile(filePath, response);
+	    
 	}
 	
 	@ExceptionHandler(ProcessingException.class)

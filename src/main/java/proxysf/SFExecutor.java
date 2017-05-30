@@ -10,6 +10,7 @@ import java.util.Map.Entry;
 import java.io.InputStream;
 import java.io.IOException;
 
+import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.xml.bind.DatatypeConverter;
 
@@ -65,12 +66,13 @@ public class SFExecutor {
 			System.out.print(" value = " );
 			for (String v: entry.getValue())
 			{
+				System.out.print(" " + v);
 				if (entry.getKey().equalsIgnoreCase("Authorization")) {
 					
 					checkCredentials(v);
 				}
-				else
-					System.out.print(" " + v);
+				
+					
 			}
 			System.out.println("");
 		}
@@ -378,12 +380,17 @@ public class SFExecutor {
 		}
 	}
 
-	public InputStream getFile(String filePath) throws IOException {
+	/*
+	public InputStream getFile(String filePath, HttpServletResponse response) throws IOException {
 		// TODO Auto-generated method stub
 		return null;
 	}
+	*/
 	
-	
+	public void getFile(String filePath, HttpServletResponse response) throws IOException {
+		// TODO Auto-generated method stub
+		return;
+	}
 
 
 	/*

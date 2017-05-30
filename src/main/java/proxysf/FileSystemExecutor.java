@@ -9,6 +9,7 @@ import java.io.*;
 import java.nio.file.*;
 
 import javax.servlet.ServletContext;
+import javax.servlet.http.HttpServletResponse;
 
 import proxysf.CatalogResult.CatalogItem;
 import proxysf.CatalogResult.ListingResult;
@@ -54,6 +55,7 @@ public class FileSystemExecutor extends SFExecutor {
  	    }
 		
  	    System.out.println("read file tree = " + fileTree);
+ 	    fileTree = fileTree.substring(1,  fileTree.length()-1);
  	    createFileTree(fileTree);
 	}
 
@@ -62,9 +64,9 @@ public class FileSystemExecutor extends SFExecutor {
 		for (String e: entries){
 			String[] paths = e.split(":");
 			if (paths.length == 1 || paths[1] == null)
-				addFileTreeEntry(FSROOT,paths[0]);
+				addFileTreeEntry(FSROOT,paths[0].trim());
 			else
-			  addFileTreeEntry(paths[1], paths[0]);
+			  addFileTreeEntry(paths[1].trim(), paths[0].trim());
 		}
 		
 	}
@@ -104,7 +106,7 @@ public class FileSystemExecutor extends SFExecutor {
 			throw new ProcessingException("not a directory " + dir);
 		for (String pathName : dirStream) {
 			Map<String, String> attrs = new HashMap<String, String>();
-			if (!(pathName.endsWith("csv") || pathName.endsWith("xslx"))) {
+			if (!(pathName.endsWith("csv") || pathName.endsWith("xlsx"))) {
 				attrs.put("type", "directory");
 
 				// addAllFilePaths(result, pathName);
@@ -116,12 +118,23 @@ public class FileSystemExecutor extends SFExecutor {
 		}
 	}
 
+	/*
 	public InputStream getFile(String filePath) throws IOException {
 
 		filePath = rootPath + "/" + filePath;
 		InputStream in = FileSystemExecutor.class.getClassLoader()
 				.getResourceAsStream(filePath);
 		return new BufferedInputStream(in);
+	}
+	*/
+	
+	public void getFile(String filePath, HttpServletResponse response) throws IOException {
+
+		filePath = rootPath + "/" + filePath;
+		InputStream in = FileSystemExecutor.class.getClassLoader()
+				.getResourceAsStream(filePath);
+		org.apache.commons.io.IOUtils.copy(in, response.getOutputStream());
+	    response.flushBuffer();	
 	}
 
 	/*
